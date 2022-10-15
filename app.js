@@ -85,8 +85,8 @@ app.post("/login", async (request, response) => {
 //display events
 
 app.get("/events", async (request, response)=>{
-    const { category } = request.query;
-    const query = `SELECT event_id as eventId,eventname as eventName,category,image_url as imageUrl FROM event`;
+    // const { category } = request.query;
+    const query = `SELECT event_id as eventId,eventname as eventName,category,image_url1 as imageUrl FROM event`;
     const eventArray = await db.all(query);
     //response.send(eventArray.map((event)=>convertDisplayEvents(event)));
     response.send(eventArray);

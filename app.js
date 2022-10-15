@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors")
 const { open } = require("sqlite");
 const sqlite3 = require("sqlite3");
 const jwt = require("jsonwebtoken");
@@ -7,6 +8,7 @@ const app = express();
 const path = require("path");
 const { Parser } = require("json2csv");
 const fs = require("fs");
+app.use(cors())
 app.use(express.json());
 
 const dbPath = path.join(__dirname, "dummy.db");

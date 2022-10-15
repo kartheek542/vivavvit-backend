@@ -1,0 +1,123 @@
+API 1
+Path: /login/
+Method: POST
+Request:
+{
+    "username" : "xxxx"
+    "password" : "xxxx"
+}
+Response: jwt token
+
+
+
+
+API 2
+Path: /events/
+Method: GET
+Response:
+[
+    {
+        "eventId": 1,
+        "eventName": "running",
+        "category": "sports",
+        "ImageUrl": ""
+    },
+    {
+        "eventId": 2,
+        "eventName": "coding",
+        "category": "technical",
+        "ImageUrl": ""
+    }
+]
+
+
+API 3
+Path: /events/:eventId
+Method: GET
+Response:
+{
+    "eventId": 1,
+    "eventName": "running",
+    "category": "sports",
+    "ImageUrl": "",
+    "venue": "",
+    "dateTime": "",
+    "description": ""
+}
+
+
+API 4
+Path: /register/
+Method: POST
+Request:
+{
+    "name": "xxxx",
+    "rollNo": "xxxx",
+    "college": "xxxx",
+    "branch": "xxxx",
+    "mobile": "xxxx",
+    "events": [id1,id2,id3,...........,]
+}
+Response: "Registration succesfull"
+
+API 5
+Path: /coordinator/
+Method: GET
+Response:
+{
+    "eventId": 1,
+    "eventName": "running",
+    "category": "sports",
+    "imageUrl": "",
+    "venue": "",
+    "dateTime": "",
+    "description": ""
+}
+
+API 6
+Path: /coordinator/save
+Method: PUT
+Request:{
+    "eventId": 1,
+    "eventName": "running",
+    "category": "sports",
+    "imageUrl": "",
+    "venue": "",
+    "dateTime": "",
+    "description": ""
+}
+
+API 7
+Path: /coordinator/reports
+Method: GET
+Response:
+(Participant Details)
+[
+    {
+        "rollNo": "xx",
+        "name": "xxxx",
+        "college": "x",
+        "year": x,
+        "branch": "xx",
+        "mobile": "x",
+        "email": "xx"
+    },
+    {
+        "rollNo": "xx",
+        "name": "xxx",
+        "college": "xxx",
+        "year": x,
+        "branch": "xxx",
+        "mobile": "xxx",
+        "email": "xxx"
+    }
+]
+
+API 8
+Path: /coordinator/reports/filter?order_by=name
+Method: GET
+Request:
+{
+    gender : ['M'];
+    year ; [4];
+}

@@ -1,0 +1,31 @@
+{
+  "name": "vivavvit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kartheek542/vivavvit-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kartheek542/vivavvit-backend/issues"
+  },
+  "homepage": "https://github.com/kartheek542/vivavvit-backend#readme",
+  "keywords": [],
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "date-fns": "^2.29.3",
+    "express": "^4.18.2",
+    "js2csv": "^1.1.0",
+    "json2csv": "^5.0.7",
+    "jsonwebtoken": "^8.5.1",
+    "nodemon": "^2.0.20",
+    "sqlite": "^4.1.2",
+    "sqlite3": "^5.1.2"
+  }
+}

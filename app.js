@@ -114,24 +114,30 @@ app.get("/events/:eventId", async (request, response) => {
 });
 
 app.post("/register", async (request, response) => {
-  const { name, rollNo, college, year, branch, email, mobile, events, gender } =
-    request.body;
-  const userQuery = `INSERT INTO user(rollno,username,email,college,branch,mobile,year,gender)
-                     VALUES ('${rollNo}','${name}','${email}','${college}','${branch}','${mobile}',${year},'${gender}');`;
-  await db.run(userQuery);
-  let placeholders = events
-    .map((event) => "(" + rollNo + "," + event + ")")
-    .join(",");
-  let query = "INSERT INTO register(rollno, event_id) VALUES " + placeholders;
-  await db.run(query);
-  response.send("registration successful");
+  const { name, rollNo, college, year, branch, email, mobile, events, gender } = request.body;
+  const Query = `SELECT event_id FROM register WHERE rollno = '${rollNo}';`;
+  const ans = await db.all(Query);
+  let array = []
+  let x = ans.map((x)=> array.push(x.event_id));
+  const common = events.filter(value => !x.includes(value));
+  if(ans.length==0){
+    const userQuery = `INSERT INTO user(rollno,username,email,college,branch,mobile,year,gender)
+                       VALUES ('${rollNo}','${name}','${email}','${college}','${branch}','${mobile}',${year},'${gender}');`;
+    await db.run(userQuery);
+  }
+    let placeholders = common
+      .map((event) => "(" + "'" + rollNo + "'" + "," + event + ")")
+      .join(",");
+    if(placeholders.length != 0){
+      let query = "INSERT INTO register(rollno, event_id) VALUES " + placeholders;
+      await db.run(query);
+    }
+    response.send("registration successful");
 });
 
 app.get("/coordinator", authenticate, async (request, response) => {
   const eventId = request.eventId;
-  console.log(eventId);
   const query = `SELECT * FROM event where event_id = ${eventId}`;
-  console.log(query);
   const Details = await db.get(query);
   response.send(convertDisplayEvent(Details));
 });
@@ -141,16 +147,17 @@ app.put("/coordinator/save", authenticate, async (request, response) => {
     eventId,
     eventName,
     category,
-    imageUrl,
     venue,
-    dateTime,
+    date,
+    time,
     description,
   } = request.body;
   const query = `UPDATE event SET
                  eventname = '${eventName}',
                  category = '${category}',
                  venue = '${venue}',
-                 date_time = '${dateTime}',
+                 date = '${date}',
+                 time = '${time}',
                  description = '${description}'
                  WHERE event_id = ${eventId};`;
   const ans = await db.run(query);
@@ -190,7 +197,6 @@ app.get(
   FROM user u INNER JOIN register r ON u.rollno = r.rollno
   WHERE r.event_id = ${eventId} AND year IN ${y} AND gender IN ${x}
   ORDER BY ${order_by}`;
-    console.log(query);
     const ans = await db.all(query);
     response.send(ans);
   }

@@ -1,5 +1,5 @@
 const express = require("express");
-const cors = require("cors")
+const cors = require("cors");
 const { open } = require("sqlite");
 const sqlite3 = require("sqlite3");
 const jwt = require("jsonwebtoken");
@@ -8,7 +8,7 @@ const app = express();
 const path = require("path");
 const { Parser } = require("json2csv");
 const fs = require("fs");
-app.use(cors())
+app.use(cors());
 app.use(express.json());
 
 const dbPath = path.join(__dirname, "dummy.db");
@@ -21,8 +21,7 @@ const initialize = async () => {
       filename: dbPath,
       driver: sqlite3.Database,
     });
-    // console.log(process.env.PORT)
-    app.listen(process.env.PORT || 8080, () => console.log("running"));
+    app.listen(process.env.PORT || 8080, () => console.log("Server started successfully at port 8080"));
   } catch (e) {
     console.log(`Error ${e.message}`);
     process.exit(1);
@@ -46,8 +45,6 @@ const authenticate = (request, response, next) => {
         response.status(401);
         response.send("Invalid JWT Token");
       } else {
-        console.log("successfully verified");
-        //console.log("")
         request.rollNo = payload.rollNo;
         request.eventId = payload.eventId;
         next();
@@ -63,19 +60,19 @@ app.post("/login", async (request, response) => {
   const ans = await db.get(query);
   if (ans === undefined) {
     response.status(400);
-    response.send("Invalid user");
+    response.send({ errorMsg: "Invalid user" });
   } else {
     const checkPassword = await bcrypt.compare(password, ans.password);
     if (!checkPassword) {
       response.status(400);
-      response.send("Invalid password");
+      response.send({ errorMsg: "Invalid password" });
     } else {
       const rollNo = username;
       const query = `SELECT event_id from coordinator where rollno = '${rollNo}'`;
       const ans = await db.get(query);
       const payload = { rollNo: username, eventId: ans.event_id };
       const jwtToken = jwt.sign(payload, "vivavvit");
-      response.send({ jwtToken });
+      response.send({ vvitAccessToken: jwtToken });
     }
   }
 });
@@ -83,10 +80,14 @@ app.post("/login", async (request, response) => {
 //display events
 
 app.get("/events", async (request, response) => {
-  // const { category } = request.query;
-  const query = `SELECT event_id as eventId,eventname as eventName,category,image_url1 as imageUrl FROM event`;
+  const query = `
+    SELECT 
+      event_id as eventId,
+      eventname as eventName,
+      category,
+      image_url1 as imageUrl 
+    FROM event`;
   const eventArray = await db.all(query);
-  //response.send(eventArray.map((event)=>convertDisplayEvents(event)));
   response.send(eventArray);
 });
 
@@ -114,25 +115,28 @@ app.get("/events/:eventId", async (request, response) => {
 });
 
 app.post("/register", async (request, response) => {
-  const { name, rollNo, college, year, branch, email, mobile, events, gender } = request.body;
+  const { name, rollNo, college, year, branch, email, mobile, events, gender } =
+    request.body;
   const Query = `SELECT event_id FROM register WHERE rollno = '${rollNo}';`;
   const ans = await db.all(Query);
-  let array = []
-  let x = ans.map((x)=> array.push(x.event_id));
-  const common = events.filter(value => !x.includes(value));
-  if(ans.length==0){
-    const userQuery = `INSERT INTO user(rollno,username,email,college,branch,mobile,year,gender)
-                       VALUES ('${rollNo}','${name}','${email}','${college}','${branch}','${mobile}',${year},'${gender}');`;
+  let array = ans.map((x) => x.event_id);
+  const common = events.filter((value) => !array.includes(value));
+  if (ans.length == 0) {
+    const userQuery = `
+      INSERT INTO 
+        user(rollno,username,email,college,branch,mobile,year,gender)
+        VALUES('${rollNo}','${name}','${email}','${college}','${branch}','${mobile}',${year},'${gender}');
+    `;
     await db.run(userQuery);
   }
-    let placeholders = common
-      .map((event) => "(" + "'" + rollNo + "'" + "," + event + ")")
-      .join(",");
-    if(placeholders.length != 0){
-      let query = "INSERT INTO register(rollno, event_id) VALUES " + placeholders;
-      await db.run(query);
-    }
-    response.send("registration successful");
+  let placeholders = common
+    .map((event) => "(" + "'" + rollNo + "'" + "," + event + ")")
+    .join(",");
+  if (placeholders.length != 0) {
+    let query = "INSERT INTO register(rollno, event_id) VALUES " + placeholders;
+    await db.run(query);
+  }
+  response.send("registration successful");
 });
 
 app.get("/coordinator", authenticate, async (request, response) => {
@@ -143,32 +147,36 @@ app.get("/coordinator", authenticate, async (request, response) => {
 });
 
 app.put("/coordinator/save", authenticate, async (request, response) => {
-  const {
-    eventId,
-    eventName,
-    category,
-    venue,
-    date,
-    time,
-    description,
-  } = request.body;
-  const query = `UPDATE event SET
-                 eventname = '${eventName}',
-                 category = '${category}',
-                 venue = '${venue}',
-                 date = '${date}',
-                 time = '${time}',
-                 description = '${description}'
-                 WHERE event_id = ${eventId};`;
+  const { venue, date, time, description } = request.body;
+  const eventId = request.eventId;
+  const query = `
+    UPDATE event 
+    SET
+      venue = '${venue}',
+      date = '${date}',
+      time = '${time}',
+      description = '${description}'
+    WHERE event_id = ${eventId};
+  `;
   const ans = await db.run(query);
   response.send(ans);
 });
 
 app.get("/coordinator/reports", authenticate, async (request, response) => {
   const eventId = request.eventId;
-  const query = `SELECT DISTINCT u.rollno as rollNo, username as name, college, year, branch, mobile, email
-                 FROM user u INNER JOIN register r ON u.rollno = r.rollno
-                 WHERE r.event_id = ${eventId}`;
+  const query = `
+  SELECT DISTINCT 
+    u.rollno as rollNo, 
+    username as name, 
+    college, 
+    year, 
+    branch, 
+    mobile, 
+    email
+    FROM user u 
+      INNER JOIN register r ON u.rollno = r.rollno
+      WHERE r.event_id = ${eventId}
+  `;
   const ans = await db.all(query);
   response.send(ans);
 });
@@ -184,16 +192,16 @@ app.get("/coordinator/reports", authenticate, async (request, response) => {
 //   response.status(200).send(csv);
 // })
 
-app.get(
+app.post(
   "/coordinator/reports/filter",
   authenticate,
   async (request, response) => {
     const { order_by } = request.query;
     const { gender, year } = request.body;
-    const eventId = 1;
+    const eventId = request.eventId;
     const x = "(" + gender.map((x) => "'" + x + "'").join(",") + ")";
     const y = "(" + year.map((x) => x).join(",") + ")";
-    const query = `SELECT DISTINCT u.rollno as rollNo, username as name, college, year, branch, mobile, email
+    const query = `SELECT DISTINCT u.rollno as rollNo, username as name, college, year, branch, mobile, email, gender
   FROM user u INNER JOIN register r ON u.rollno = r.rollno
   WHERE r.event_id = ${eventId} AND year IN ${y} AND gender IN ${x}
   ORDER BY ${order_by}`;

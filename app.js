@@ -181,16 +181,16 @@ app.get("/coordinator/reports", authenticate, async (request, response) => {
   response.send(ans);
 });
 
-// app.get("/coordinator/reports/download",(request, response)=>{
-//   const csvParser = new Parser();
-//   const csv = csvParser.parse(request.body);
-//   fs.writeFile("list.csv", csv, function(err){
-//     if(err) throw err;
-//     console.log(csv);
-//   });
-//   response.attachment("list.csv");
-//   response.status(200).send(csv);
-// })
+app.get("/coordinator/reports/download",(request, response)=>{
+  const csvParser = new Parser();
+  const csv = csvParser.parse(request.body);
+  fs.writeFile("list.csv", csv, function(err){
+    if(err) throw err;
+    console.log(csv);
+  });
+  response.attachment("list.csv");
+  response.status(200).send(csv);
+})
 
 app.post(
   "/coordinator/reports/filter",

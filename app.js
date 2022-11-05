@@ -8,6 +8,7 @@ const app = express();
 const path = require("path");
 const { Parser } = require("json2csv");
 const fs = require("fs");
+const nodemailer = require('nodemailer');
 app.use(cors());
 app.use(express.json());
 
@@ -39,7 +40,7 @@ const authenticate = (request, response, next) => {
   if (jwtToken === undefined) {
     response.status(401);
     response.send("Invalid JWT Token");
-  } else {
+  } else {--
     jwt.verify(jwtToken, "vivavvit", async (error, payload) => {
       if (error) {
         response.status(401);
@@ -136,6 +137,77 @@ app.post("/register", async (request, response) => {
     let query = "INSERT INTO register(rollno, event_id) VALUES " + placeholders;
     await db.run(query);
   }
+
+
+  const eventList = '('+[...events]+')';
+  const ListQuery = `SELECT eventname,category FROM event WHERE event_id in ${eventList}`;
+  const result = await db.all(ListQuery);
+
+  const techeventNames = result.filter(x => x.category=="TECHNICAL");
+  const culturaleventNames = result.filter(x => x.category=="CULTURAL");
+  const sportseventNames = result.filter(x => x.category=="SPORTS");
+ 
+  var techEventString = "";
+  var culturalEventString = "";
+  var sportsEventString = "";
+
+  for (let i = 0; i < techeventNames.length; i++) {
+    techEventString = techEventString + `${i+1}. ${techeventNames[i].eventname} \n\n\n`;
+  }
+  for (let i = 0; i < culturaleventNames.length; i++) {
+    culturalEventString = culturalEventString + `${i+1}. ${culturaleventNames[i].eventname} \n\n\n`;
+  }
+  for (let i = 0; i < sportseventNames.length; i++) {
+    sportsEventString = sportsEventString + `${i+1}. ${sportseventNames[i].eventname} \n\n\n`;
+  }
+
+  if(techEventString.length==0) techEventString="None";
+  if(culturalEventString.length==0) culturalEventString="None";
+  if(sportsEventString.length==0) sportsEventString="None";
+  
+  const emailMessage = `<!DOCTYPE html>
+  <html>
+      <head>
+          <title>VIVAVVIT</title>
+      </head>
+      <body>
+          <h1 style="color:black">Thanks For Registering to VIVAVVIT</h1>
+          <img src="https://raw.githubusercontent.com/kamal-tej/proj_images/main/vivavvit1.png" alt="vivavvit"
+                width="500" height="300">
+          <h2>REGISTERED EVENTS</h2>
+          <h3 style="color: red">Technical Events</h3>
+          <h4>${techEventString}</h4>
+          <h3 style="color: green">Cultural Events</h3>
+          <h4>${culturalEventString}</h4>
+          <h3 style="color: blue">Sports Events</h3>
+          <h4>${sportsEventString}</h4>
+      </body>
+  </html>`
+
+
+  var transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'kamalkushiguthikonda@gmail.com',
+      pass: 'qzzxjrkiubljkhib'
+    }
+  });  
+
+  var mailOptions = {
+    from: 'kamalkushiguthikonda@gmail.com',
+    to: email,
+    subject: 'Registraion Successful',
+    html: emailMessage
+  };
+  await transporter.sendMail(mailOptions, function(error, info){
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+  });
+
+
   response.send("registration successful");
 });
 
@@ -181,30 +253,47 @@ app.get("/coordinator/reports", authenticate, async (request, response) => {
   response.send(ans);
 });
 
-app.get("/coordinator/reports/download",(request, response)=>{
+var csvFile;
+
+app.post("/coordinator/reports/download",authenticate, async (request, response)=>{   
+  const { order_by } = request.query;
+  const { gender, year } = request.body;
+  const eventId = request.eventId;
+  const x = "(" + gender.map((x) => "'" + x + "'").join(",") + ")";
+  const y = "(" + year.map((x) => x).join(",") + ")";
+  console.log(x,y);
+  const query = `SELECT DISTINCT u.rollno as rollNo, username as name, college, year, branch, mobile, email, gender
+                  FROM user u INNER JOIN register r ON u.rollno = r.rollno
+                  WHERE r.event_id = ${eventId} AND year IN ${y} AND gender IN ${x}
+                  ORDER BY ${order_by}`;
+
+  console.log(query);
+  const ans = await db.all(query);
+  console.log(ans);
+  
   const csvParser = new Parser();
-  const csv = csvParser.parse(request.body);
+  const csv = csvParser.parse(ans);
   fs.writeFile("list.csv", csv, function(err){
     if(err) throw err;
-    console.log(csv);
   });
   response.attachment("list.csv");
-  response.status(200).send(csv);
+  response.status(200).send("generated list.csv");
 })
 
-app.post(
-  "/coordinator/reports/filter",
-  authenticate,
-  async (request, response) => {
+app.get("/coordinator/reports/registeredfile", async (request, response)=>{
+  response.sendFile(__dirname+"/list.csv");
+})
+
+app.post("/coordinator/reports/filter",authenticate,async (request, response) => {
     const { order_by } = request.query;
     const { gender, year } = request.body;
     const eventId = request.eventId;
     const x = "(" + gender.map((x) => "'" + x + "'").join(",") + ")";
     const y = "(" + year.map((x) => x).join(",") + ")";
     const query = `SELECT DISTINCT u.rollno as rollNo, username as name, college, year, branch, mobile, email, gender
-  FROM user u INNER JOIN register r ON u.rollno = r.rollno
-  WHERE r.event_id = ${eventId} AND year IN ${y} AND gender IN ${x}
-  ORDER BY ${order_by}`;
+                    FROM user u INNER JOIN register r ON u.rollno = r.rollno
+                    WHERE r.event_id = ${eventId} AND year IN ${y} AND gender IN ${x}
+                    ORDER BY ${order_by}`;
     const ans = await db.all(query);
     response.send(ans);
   }

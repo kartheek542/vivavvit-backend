@@ -280,7 +280,7 @@ app.post("/coordinator/reports/download",authenticate, async (request, response)
   response.status(200).send("generated list.csv");
 })
 
-app.get("/coordinator/reports/registeredfile",authenticate async (request, response)=>{
+app.get("/coordinator/reports/registeredfile",authenticate, async (request, response)=>{
   response.sendFile(__dirname+"/list.csv");
 })
 
